@@ -1,13 +1,17 @@
-﻿using System;
-using Android.App;
+﻿using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
+using Android.App.Admin;
+using Android.App.Usage;
+using Java.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Java.Lang;
 
 namespace Vietapp.Droid
 {
@@ -15,8 +19,11 @@ namespace Vietapp.Droid
     public class MainActivity : Activity
     {
         Button showAppsButton;
+        Button showAppUsageButton;
         ListView appListView;
+        ListView appUsageListView;
         List<PackageInfo> installedApps;
+        List<AppUsageInfo> appUsageInfos;
 
         Button saveTimeButton;
         EditText hoursEditText;
@@ -25,11 +32,15 @@ namespace Vietapp.Droid
         ListView savedTimesListView;
         List<string> savedTimes;
 
-        Button toggleSavedTimesButton; // Added button for toggling saved times
-        bool savedTimesVisible = false; // Added boolean variable to control visibility
-        ArrayAdapter<string> savedTimesAdapter; // Adapter for saved times list view
+        Button toggleSavedTimesButton;
+        bool savedTimesVisible = false;
+        ArrayAdapter<string> savedTimesAdapter;
 
         ISharedPreferences sharedPreferences;
+
+        UsageStatsManager usageStatsManager;
+        PackageManager packageManager;
+        bool isTracking = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -44,29 +55,28 @@ namespace Vietapp.Droid
             showAppsButton.Text = "Các app";
             showAppsButton.Click += ShowAppsButton_Click;
 
-            // Initialize appListView but set its visibility to Gone initially
+            showAppUsageButton = new Button(this);
+            showAppUsageButton.Text = "Thời gian sử dụng app";
+            showAppUsageButton.Click += ShowAppUsageButton_Click;
+
             appListView = new ListView(this);
             appListView.Visibility = ViewStates.Gone;
 
-            // Create a horizontal LinearLayout for Save Time and Show Saved Times buttons
+            appUsageListView = new ListView(this);
+            appUsageListView.Visibility = ViewStates.Gone;
+
             LinearLayout buttonsLayout = new LinearLayout(this);
             buttonsLayout.Orientation = Orientation.Horizontal;
 
-            // Button for saving time
             saveTimeButton = new Button(this);
             saveTimeButton.Text = "Lưu thời gian";
             saveTimeButton.Click += SaveTimeButton_Click;
 
-
-            // Add the Save Time and Show Saved Times buttons to the horizontal layout
             buttonsLayout.AddView(saveTimeButton);
-            buttonsLayout.AddView(toggleSavedTimesButton);
 
-            // Create a horizontal LinearLayout for time input
             LinearLayout timeInputLayout = new LinearLayout(this);
             timeInputLayout.Orientation = Orientation.Horizontal;
 
-            // EditText fields for hours, minutes, and seconds
             hoursEditText = new EditText(this);
             hoursEditText.Hint = "Giờ";
             minutesEditText = new EditText(this);
@@ -74,55 +84,49 @@ namespace Vietapp.Droid
             secondsEditText = new EditText(this);
             secondsEditText.Hint = "Giây";
 
-            // Add the EditText fields to the horizontal layout
             timeInputLayout.AddView(hoursEditText);
             timeInputLayout.AddView(minutesEditText);
             timeInputLayout.AddView(secondsEditText);
 
-            // Initialize the list of saved times
             savedTimes = new List<string>();
 
-            // Retrieve shared preferences
             sharedPreferences = GetSharedPreferences("SavedTimes", FileCreationMode.Private);
 
-            // Load saved times from shared preferences
             LoadSavedTimes();
 
-            // Add the button for toggling saved times
             toggleSavedTimesButton = new Button(this);
             toggleSavedTimesButton.Text = "Ẩn/Hiện thời gian đã lưu";
             toggleSavedTimesButton.Click += ToggleSavedTimesButton_Click;
 
-            // Create an adapter for the saved times list view
             savedTimesAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, savedTimes);
 
-            // ListView for displaying saved times
             savedTimesListView = new ListView(this);
             savedTimesListView.Adapter = savedTimesAdapter;
             savedTimesListView.Visibility = ViewStates.Gone;
 
-            // Add the views to the layout
+            usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
+            packageManager = PackageManager;
+
             layout.AddView(showAppsButton);
+            layout.AddView(showAppUsageButton);
             layout.AddView(appListView);
-            layout.AddView(buttonsLayout); // Add the horizontal layout for buttons
-            layout.AddView(timeInputLayout); // Add the horizontal layout for time input
-            layout.AddView(toggleSavedTimesButton); // Add the button for toggling saved times
+            layout.AddView(appUsageListView);
+            layout.AddView(buttonsLayout);
+            layout.AddView(timeInputLayout);
+            layout.AddView(toggleSavedTimesButton);
             layout.AddView(savedTimesListView);
 
-            // Set the layout as the content view
             SetContentView(layout);
         }
 
         private async void ShowAppsButton_Click(object sender, System.EventArgs e)
         {
-            // Toggle the visibility of appListView
             if (appListView.Visibility == ViewStates.Visible)
             {
-                appListView.Visibility = ViewStates.Gone; // Hide the ListView
+                appListView.Visibility = ViewStates.Gone;
             }
             else
             {
-                // Show a loading indicator while retrieving and processing apps
                 ProgressDialog progressDialog = ProgressDialog.Show(this, "Vui lòng chờ", "Đang Tải...");
 
                 await Task.Run(() =>
@@ -136,7 +140,32 @@ namespace Vietapp.Droid
                 ArrayAdapter<string> adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, appNames);
 
                 appListView.Adapter = adapter;
-                appListView.Visibility = ViewStates.Visible; // Show the ListView
+                appListView.Visibility = ViewStates.Visible;
+            }
+        }
+
+        private async void ShowAppUsageButton_Click(object sender, System.EventArgs e)
+        {
+            if (appUsageListView.Visibility == ViewStates.Visible)
+            {
+                appUsageListView.Visibility = ViewStates.Gone;
+            }
+            else
+            {
+                ProgressDialog progressDialog = ProgressDialog.Show(this, "Vui lòng chờ", "Đang Tải...");
+
+                await Task.Run(() =>
+                {
+                    appUsageInfos = GetAppUsageStats();
+                });
+
+                progressDialog.Dismiss();
+
+                List<string> appUsageList = appUsageInfos.Select(info => $"{info.AppName}: {info.UsageTime}").ToList();
+                ArrayAdapter<string> adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, appUsageList);
+
+                appUsageListView.Adapter = adapter;
+                appUsageListView.Visibility = ViewStates.Visible;
             }
         }
 
@@ -145,10 +174,53 @@ namespace Vietapp.Droid
             PackageManager packageManager = PackageManager;
             List<PackageInfo> packages = packageManager.GetInstalledPackages(PackageInfoFlags.Activities).ToList();
 
-            // Filter out system apps
             packages = packages.Where(package => (package.ApplicationInfo.Flags & ApplicationInfoFlags.System) == 0).ToList();
 
             return packages;
+        }
+
+        private List<AppUsageInfo> GetAppUsageStats()
+        {
+            List<AppUsageInfo> appUsageInfoList = new List<AppUsageInfo>();
+
+            // Get app usage stats for the last 24 hours
+            long endTime = JavaSystem.CurrentTimeMillis();
+            long startTime = endTime - (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+
+            List<UsageStats> usageStatsList = usageStatsManager.QueryUsageStats(UsageStatsInterval.Daily, startTime, endTime).ToList();
+
+            foreach (UsageStats usageStats in usageStatsList)
+            {
+                string packageName = usageStats.PackageName;
+                string appName = getAppNameFromPackage(packageName);
+                long usageTime = usageStats.TotalTimeInForeground;
+
+                if (!string.IsNullOrEmpty(appName) && usageTime > 0)
+                {
+                    AppUsageInfo appUsageInfo = new AppUsageInfo
+                    {
+                        AppName = appName,
+                        UsageTime = TimeSpan.FromMilliseconds(usageTime).ToString(@"hh\:mm\:ss")
+                    };
+
+                    appUsageInfoList.Add(appUsageInfo);
+                }
+            }
+
+            return appUsageInfoList;
+        }
+
+        private string getAppNameFromPackage(string packageName)
+        {
+            try
+            {
+                ApplicationInfo appInfo = packageManager.GetApplicationInfo(packageName, 0);
+                return appInfo.LoadLabel(packageManager).ToString();
+            }
+            catch (PackageManager.NameNotFoundException)
+            {
+                return packageName;
+            }
         }
 
         private void SaveTimeButton_Click(object sender, EventArgs e)
@@ -157,7 +229,6 @@ namespace Vietapp.Droid
             string minutesText = minutesEditText.Text.Trim();
             string secondsText = secondsEditText.Text.Trim();
 
-            // Validate and parse the input
             if (int.TryParse(hoursText, out int hours) && int.TryParse(minutesText, out int minutes) && int.TryParse(secondsText, out int seconds))
             {
                 TimeSpan timeSpan = new TimeSpan(hours, minutes, seconds);
@@ -166,29 +237,25 @@ namespace Vietapp.Droid
                 savedTimes.Add(formattedTime);
                 UpdateSavedTimesListView();
 
-                // Save the updated list of times to shared preferences
                 SaveSavedTimes();
 
-                // Clear the input fields
                 hoursEditText.Text = "";
                 minutesEditText.Text = "";
                 secondsEditText.Text = "";
             }
             else
             {
-                // Display an error message if the input is not valid
                 Toast.MakeText(this, "Hãy nhập thời gian hợp lệ", ToastLength.Short).Show();
             }
         }
 
         private void UpdateSavedTimesListView()
         {
-            savedTimesAdapter.NotifyDataSetChanged(); // Update the ListView adapter
+            savedTimesAdapter.NotifyDataSetChanged();
         }
 
         private void SaveSavedTimes()
         {
-            // Serialize the list of saved times to a string and save it to shared preferences
             ISharedPreferencesEditor editor = sharedPreferences.Edit();
             string savedTimesString = string.Join(",", savedTimes);
             editor.PutString("SavedTimes", savedTimesString);
@@ -197,7 +264,6 @@ namespace Vietapp.Droid
 
         private void LoadSavedTimes()
         {
-            // Retrieve the saved times from shared preferences and deserialize them
             string savedTimesString = sharedPreferences.GetString("SavedTimes", null);
 
             if (!string.IsNullOrEmpty(savedTimesString))
@@ -208,9 +274,14 @@ namespace Vietapp.Droid
 
         private void ToggleSavedTimesButton_Click(object sender, EventArgs e)
         {
-            // Toggle the visibility of saved times
             savedTimesVisible = !savedTimesVisible;
             savedTimesListView.Visibility = savedTimesVisible ? ViewStates.Visible : ViewStates.Gone;
         }
+    }
+
+    public class AppUsageInfo
+    {
+        public string AppName { get; set; }
+        public string UsageTime { get; set; }
     }
 }

@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:minWidth="25px"
+    android:minHeight="25px">
 
     <TextView
         android:id="@+id/appUsageTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="App Usage Information Will Appear Here"
-        android:textSize="18sp"
-        android:layout_gravity="center"/>
+        android:text="App Usage Time"
+        android:textSize="18sp" />
 
 </LinearLayout>

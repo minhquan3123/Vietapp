@@ -72,10 +72,8 @@ namespace Vietapp.Droid
                 // Display app usage statistics in a TextView
                 appUsageTextView.Text = string.Join("\n", appUsageList);
             }
-
-
-        
         }
+
 
         private string GetAppName(string packageName)
         {

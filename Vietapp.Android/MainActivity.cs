@@ -38,7 +38,7 @@ namespace Vietapp.Droid
         private void CheckAndRequestUsageStatsPermission()
         {
             var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);
-            var mode = appOps.CheckOpNoThrow(Android.App.AppOpsManager.OpstrUsageStats, Process.MyUid(), PackageName);
+            var mode = appOps.CheckOpNoThrow(Android.App.AppOpsManager.OpstrGetUsageStats, Android.OS.Process.MyUid(), PackageName);
 
             if (mode != Android.App.AppOpsManagerMode.Allowed)
             {
@@ -72,6 +72,9 @@ namespace Vietapp.Droid
                 // Display app usage statistics in a TextView
                 appUsageTextView.Text = string.Join("\n", appUsageList);
             }
+
+
+        
         }
 
         private string GetAppName(string packageName)

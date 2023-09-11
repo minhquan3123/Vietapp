@@ -17,6 +17,7 @@ namespace Vietapp.Droid
     public class MainActivity : Activity
     {
         TextView appUsageTextView;
+        TextView installedAppsTextView;
         PackageManager packageManager;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -79,6 +80,25 @@ namespace Vietapp.Droid
         {
             var packageInfo = packageManager.GetPackageInfo(packageName, PackageInfoFlags.Activities);
             return packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
+        }
+
+        private void GetInstalledApps()
+        {
+            var apps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchAll);
+
+            if (apps != null)
+            {
+                var installedAppList = new List<string>();
+
+                foreach (var app in apps)
+                {
+                    string appName = app.LoadLabel(packageManager).ToString();
+                    installedAppList.Add(appName);
+                }
+
+                // Display installed apps in the TextView
+                installedAppsTextView.Text = string.Join("\n", installedAppList);
+            }
         }
     }
 }

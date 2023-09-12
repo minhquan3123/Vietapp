@@ -4,10 +4,8 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Provider;
-using Android.Views;
 using Android.Widget;
 using Java.Lang;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -27,17 +25,13 @@ namespace Vietapp.Droid
             SetContentView(Resource.Layout.activity_main);
 
             appUsageTextView = FindViewById<TextView>(Resource.Id.appUsageTextView);
-            installedAppsTextView = FindViewById<TextView>(Resource.Id.installedAppsTextView);
             packageManager = PackageManager;
 
             // Check and request the PACKAGE_USAGE_STATS permission
             CheckAndRequestUsageStatsPermission();
 
-            // Retrieve and display app usage statistics
+            // Retrieve and display app usage statistics for installed apps (excluding system apps)
             DisplayAppUsageStatisticsForInstalledApps();
-
-            //
-            GetInstalledApps();     
         }
 
         private void CheckAndRequestUsageStatsPermission()
@@ -62,8 +56,8 @@ namespace Vietapp.Droid
 
             if (stats != null)
             {
-                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchAll);
-                var installedPackageNames = installedApps.Select(app => app.PackageName).ToList();
+                // Get a list of all installed apps (excluding system apps)
+                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
 
                 var appUsageList = new List<string>();
 
@@ -71,22 +65,34 @@ namespace Vietapp.Droid
                 {
                     string packageName = usageStats.PackageName;
 
-                    // Check if the package name corresponds to an installed app
-                    if (installedPackageNames.Contains(packageName))
+                    // Check if the package name corresponds to an installed app and is not a system app
+                    if (IsInstalledApp(installedApps, packageName))
                     {
                         string appName = GetAppName(packageName);
-                        long totalTimeInForeground = usageStats.TotalTimeInForeground / 1000; // Convert to seconds
+                        long totalTimeInForeground = usageStats.TotalTimeInForeground / (1000 * 60); // Convert to minutes
 
-                        string appUsageInfo = $"{appName}: {totalTimeInForeground} seconds";
+                        string appUsageInfo = $"{appName}: {totalTimeInForeground} minutes";
                         appUsageList.Add(appUsageInfo);
                     }
                 }
 
-                // Display app usage statistics for installed apps in the TextView
+                // Display app usage statistics for installed apps (excluding system apps) in the TextView
                 appUsageTextView.Text = string.Join("\n", appUsageList);
             }
         }
 
+        private bool IsInstalledApp(IList<ApplicationInfo> installedApps, string packageName)
+        {
+            // Filter out system apps by checking their flags
+            foreach (var appInfo in installedApps)
+            {
+                if (appInfo.PackageName == packageName && (appInfo.Flags & ApplicationInfoFlags.System) == 0)
+                {
+                    return true; // It's an installed non-system app
+                }
+            }
+            return false; // It's either a system app or not installed
+        }
 
         private string GetAppName(string packageName)
         {
@@ -99,25 +105,6 @@ namespace Vietapp.Droid
             {
                 // Handle the case where the package name is not found
                 return packageName;
-            }
-        }
-
-        private void GetInstalledApps()
-        {
-            var apps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchAll);
-
-            if (apps != null)
-            {
-                var installedAppList = new List<string>();
-
-                foreach (var app in apps)
-                {
-                    string appName = app.LoadLabel(packageManager).ToString();
-                    installedAppList.Add(appName);
-                }
-
-                // Display installed apps in the TextView
-                installedAppsTextView.Text = string.Join("\n", installedAppList);
             }
         }
     }

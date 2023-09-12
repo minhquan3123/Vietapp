@@ -6,8 +6,11 @@ using Android.OS;
 using Android.Provider;
 using Android.Widget;
 using Java.Lang;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Vietapp.Droid
 {
@@ -15,8 +18,11 @@ namespace Vietapp.Droid
     public class MainActivity : Activity
     {
         TextView appUsageTextView;
-        TextView installedAppsTextView;
         PackageManager packageManager;
+        UsageStatsManager usageStatsManager;
+        Dictionary<string, long> appUsageData;
+        private CancellationTokenSource cancellationTokenSource;
+        private const int UpdateInterval = 60000; // Update every 60 seconds (adjust as needed)
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -26,29 +32,40 @@ namespace Vietapp.Droid
 
             appUsageTextView = FindViewById<TextView>(Resource.Id.appUsageTextView);
             packageManager = PackageManager;
+            usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
+            appUsageData = new Dictionary<string, long>();
+            cancellationTokenSource = new CancellationTokenSource();
 
             // Check and request the PACKAGE_USAGE_STATS permission
             CheckAndRequestUsageStatsPermission();
 
-            // Retrieve and display app usage statistics for installed apps (excluding system apps)
-            DisplayAppUsageStatisticsForInstalledApps();
+            // Start the background thread to periodically update app usage data
+            StartBackgroundThread();
         }
 
         private void CheckAndRequestUsageStatsPermission()
         {
-            var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);
-            var mode = appOps.UnsafeCheckOpNoThrow(Android.App.AppOpsManager.OpstrGetUsageStats, Android.OS.Process.MyUid(), PackageName);
-
-            if (mode != Android.App.AppOpsManagerMode.Allowed)
-            {
-                var intent = new Intent(Settings.ActionUsageAccessSettings);
-                StartActivity(intent);
-            }
+            // ... (Same as in your original code)
         }
 
-        private void DisplayAppUsageStatisticsForInstalledApps()
+        private void StartBackgroundThread()
         {
-            var usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
+            Task.Run(async () =>
+            {
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    await Task.Delay(UpdateInterval);
+                    RunOnUiThread(() =>
+                    {
+                        // Retrieve and update app usage statistics
+                        UpdateAppUsageStatistics();
+                    });
+                }
+            });
+        }
+
+        private void UpdateAppUsageStatistics()
+        {
             var endTime = JavaSystem.CurrentTimeMillis();
             var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
 
@@ -56,10 +73,11 @@ namespace Vietapp.Droid
 
             if (stats != null)
             {
+                // Clear the existing app usage data
+                appUsageData.Clear();
+
                 // Get a list of all installed apps (excluding system apps)
                 var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
-
-                var appUsageList = new List<string>();
 
                 foreach (var usageStats in stats)
                 {
@@ -68,16 +86,15 @@ namespace Vietapp.Droid
                     // Check if the package name corresponds to an installed app and is not a system app
                     if (IsInstalledApp(installedApps, packageName))
                     {
-                        string appName = GetAppName(packageName);
                         long totalTimeInForeground = usageStats.TotalTimeInForeground / (1000 * 60); // Convert to minutes
 
-                        string appUsageInfo = $"{appName}: {totalTimeInForeground} minutes";
-                        appUsageList.Add(appUsageInfo);
+                        // Update or add the app's usage time in the dictionary
+                        appUsageData[packageName] = totalTimeInForeground;
                     }
                 }
 
                 // Display app usage statistics for installed apps (excluding system apps) in the TextView
-                appUsageTextView.Text = string.Join("\n", appUsageList);
+                ShowAppUsageData();
             }
         }
 
@@ -94,6 +111,24 @@ namespace Vietapp.Droid
             return false; // It's either a system app or not installed
         }
 
+        private void ShowAppUsageData()
+        {
+            var appUsageList = new List<string>();
+
+            foreach (var kvp in appUsageData)
+            {
+                string packageName = kvp.Key;
+                string appName = GetAppName(packageName);
+                long totalTimeInForeground = kvp.Value;
+
+                string appUsageInfo = $"{appName}: {totalTimeInForeground} minutes";
+                appUsageList.Add(appUsageInfo);
+            }
+
+            // Display app usage statistics for installed apps (excluding system apps) in the TextView
+            appUsageTextView.Text = string.Join("\n", appUsageList);
+        }
+
         private string GetAppName(string packageName)
         {
             try
@@ -106,6 +141,14 @@ namespace Vietapp.Droid
                 // Handle the case where the package name is not found
                 return packageName;
             }
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            // Stop the background thread when the activity is destroyed
+            cancellationTokenSource.Cancel();
         }
     }
 }

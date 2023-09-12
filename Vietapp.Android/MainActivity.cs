@@ -45,8 +45,16 @@ namespace Vietapp.Droid
 
         private void CheckAndRequestUsageStatsPermission()
         {
-            // ... (Same as in your original code)
+            var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);
+            var mode = appOps.UnsafeCheckOpNoThrow(Android.App.AppOpsManager.OpstrGetUsageStats, Android.OS.Process.MyUid(), PackageName);
+
+            if (mode != Android.App.AppOpsManagerMode.Allowed)
+            {
+                var intent = new Intent(Settings.ActionUsageAccessSettings);
+                StartActivity(intent);
+            }
         }
+
 
         private void StartBackgroundThread()
         {

@@ -27,19 +27,23 @@ namespace Vietapp.Droid
             SetContentView(Resource.Layout.activity_main);
 
             appUsageTextView = FindViewById<TextView>(Resource.Id.appUsageTextView);
+            installedAppsTextView = FindViewById<TextView>(Resource.Id.installedAppsTextView);
             packageManager = PackageManager;
 
             // Check and request the PACKAGE_USAGE_STATS permission
             CheckAndRequestUsageStatsPermission();
 
             // Retrieve and display app usage statistics
-            DisplayAppUsageStatistics();
+            DisplayAppUsageStatisticsForInstalledApps();
+
+            //
+            GetInstalledApps();     
         }
 
         private void CheckAndRequestUsageStatsPermission()
         {
             var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);
-            var mode = appOps.CheckOpNoThrow(Android.App.AppOpsManager.OpstrGetUsageStats, Android.OS.Process.MyUid(), PackageName);
+            var mode = appOps.UnsafeCheckOpNoThrow(Android.App.AppOpsManager.OpstrGetUsageStats, Android.OS.Process.MyUid(), PackageName);
 
             if (mode != Android.App.AppOpsManagerMode.Allowed)
             {
@@ -48,7 +52,7 @@ namespace Vietapp.Droid
             }
         }
 
-        private void DisplayAppUsageStatistics()
+        private void DisplayAppUsageStatisticsForInstalledApps()
         {
             var usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             var endTime = JavaSystem.CurrentTimeMillis();
@@ -58,19 +62,27 @@ namespace Vietapp.Droid
 
             if (stats != null)
             {
+                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchAll);
+                var installedPackageNames = installedApps.Select(app => app.PackageName).ToList();
+
                 var appUsageList = new List<string>();
 
                 foreach (var usageStats in stats)
                 {
                     string packageName = usageStats.PackageName;
-                    string appName = GetAppName(packageName);
-                    long totalTimeInForeground = usageStats.TotalTimeInForeground / 1000; // Convert to seconds
 
-                    string appUsageInfo = $"{appName}: {totalTimeInForeground} seconds";
-                    appUsageList.Add(appUsageInfo);
+                    // Check if the package name corresponds to an installed app
+                    if (installedPackageNames.Contains(packageName))
+                    {
+                        string appName = GetAppName(packageName);
+                        long totalTimeInForeground = usageStats.TotalTimeInForeground / 1000; // Convert to seconds
+
+                        string appUsageInfo = $"{appName}: {totalTimeInForeground} seconds";
+                        appUsageList.Add(appUsageInfo);
+                    }
                 }
 
-                // Display app usage statistics in a TextView
+                // Display app usage statistics for installed apps in the TextView
                 appUsageTextView.Text = string.Join("\n", appUsageList);
             }
         }
@@ -78,8 +90,16 @@ namespace Vietapp.Droid
 
         private string GetAppName(string packageName)
         {
-            var packageInfo = packageManager.GetPackageInfo(packageName, PackageInfoFlags.Activities);
-            return packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
+            try
+            {
+                var packageInfo = PackageManager.GetPackageInfo(packageName, PackageInfoFlags.Activities);
+                return packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
+            }
+            catch (PackageManager.NameNotFoundException)
+            {
+                // Handle the case where the package name is not found
+                return packageName;
+            }
         }
 
         private void GetInstalledApps()

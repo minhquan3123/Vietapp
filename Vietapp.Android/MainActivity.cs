@@ -4,6 +4,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Provider;
+using Android.Views;
 using Android.Widget;
 using Java.Lang;
 using System;
@@ -21,8 +22,12 @@ namespace Vietapp.Droid
         PackageManager packageManager;
         UsageStatsManager usageStatsManager;
         Dictionary<string, long> appUsageData;
-        private CancellationTokenSource cancellationTokenSource;
-        private const int UpdateInterval = 60000; // Update every 60 seconds (adjust as needed)
+        CancellationTokenSource cancellationTokenSource;
+        const int UpdateInterval = 6000;
+
+        // Define your password here (replace "your_password" with the actual password)
+        private string CorrectPassword = "your_password";
+        private bool isAuthenticated = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -39,8 +44,8 @@ namespace Vietapp.Droid
             // Check and request the PACKAGE_USAGE_STATS permission
             CheckAndRequestUsageStatsPermission();
 
-            // Start the background thread to periodically update app usage data
-            StartBackgroundThread();
+            // Show the password prompt
+            ShowPasswordPrompt();
         }
 
         private void CheckAndRequestUsageStatsPermission()
@@ -55,6 +60,38 @@ namespace Vietapp.Droid
             }
         }
 
+        private void ShowPasswordPrompt()
+        {
+            // Create a simple password input dialog
+            var passwordDialogView = LayoutInflater.Inflate(Resource.Layout.password_dialog, null);
+            var passwordEditText = passwordDialogView.FindViewById<EditText>(Resource.Id.passwordEditText);
+            var passwordDialog = new AlertDialog.Builder(this);
+            passwordDialog.SetTitle("Enter Password");
+            passwordDialog.SetView(passwordDialogView);
+            passwordDialog.SetPositiveButton("OK", (sender, e) =>
+            {
+                // Check if the entered password is correct
+                var enteredPassword = passwordEditText.Text;
+                if (enteredPassword == CorrectPassword)
+                {
+                    isAuthenticated = true;
+                    StartBackgroundThread();
+                }
+                else
+                {
+                    Toast.MakeText(this, "Incorrect password. Please try again.", ToastLength.Short).Show();
+                    Finish();
+                }
+            });
+            passwordDialog.SetNegativeButton("Cancel", (sender, e) =>
+            {
+                Finish();
+            });
+
+            // Show the dialog
+            var dialog = passwordDialog.Create();
+            dialog.Show();
+        }
 
         private void StartBackgroundThread()
         {
@@ -65,8 +102,11 @@ namespace Vietapp.Droid
                     await Task.Delay(UpdateInterval);
                     RunOnUiThread(() =>
                     {
-                        // Retrieve and update app usage statistics
-                        UpdateAppUsageStatistics();
+                        // Only retrieve and update app usage statistics if authenticated
+                        if (isAuthenticated)
+                        {
+                            UpdateAppUsageStatistics();
+                        }
                     });
                 }
             });

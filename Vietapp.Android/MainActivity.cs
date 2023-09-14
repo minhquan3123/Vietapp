@@ -25,9 +25,8 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        // Define your password here (replace "your_password" with the actual password)
-        private string CorrectPassword = "your_password";
-        private bool isAuthenticated = false;
+        string CorrectPassword = "";
+        bool isAuthenticated = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -44,10 +43,20 @@ namespace Vietapp.Droid
             // Check and request the PACKAGE_USAGE_STATS permission
             CheckAndRequestUsageStatsPermission();
 
-            // Show the password prompt
-            ShowPasswordPrompt();
+            if (CorrectPassword!="")
+            {
+                ShowPasswordPrompt();
+            }
+            else
+            {
+                return;
+            }
         }
 
+        private void Password(string password)
+        {
+            Xamarin.Essentials.SecureStorage.SetAsync("password", CorrectPassword);
+        }
         private void CheckAndRequestUsageStatsPermission()
         {
             var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);

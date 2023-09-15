@@ -7,9 +7,11 @@ using Android.Provider;
 using Android.Views;
 using Android.Widget;
 using Java.Lang;
+using Java.Net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +27,7 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        string CorrectPassword = "";
+        string CorrectPassword;
         bool isAuthenticated = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -34,29 +36,65 @@ namespace Vietapp.Droid
 
             SetContentView(Resource.Layout.activity_main);
 
+
             appUsageTextView = FindViewById<TextView>(Resource.Id.appUsageTextView);
             packageManager = PackageManager;
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-            // Check and request the PACKAGE_USAGE_STATS permission
-            CheckAndRequestUsageStatsPermission();
+            SetPassword("123");
+
+            CorrectPassword = Xamarin.Essentials.SecureStorage.GetAsync("password");
 
             if (CorrectPassword!="")
             {
+                CheckAndRequestUsageStatsPermission();
                 ShowPasswordPrompt();
             }
             else
             {
-                return;
+                ShowPasschange();
             }
         }
 
-        private void Password(string password)
+        private async Task SetPassword(string newPassword)
         {
-            Xamarin.Essentials.SecureStorage.SetAsync("password", CorrectPassword);
+            await Xamarin.Essentials.SecureStorage.SetAsync("password", newPassword);
         }
+
+        private async void ShowPasschange()
+        {
+            // Create a simple password input dialog
+            var passwordchangeView = LayoutInflater.Inflate(Resource.Layout.change_password_dialog, null);
+            var Newpass = passwordchangeView.FindViewById<EditText>(Resource.Id.newPass);
+            var changepass = new AlertDialog.Builder(this);
+            changepass.SetTitle("Enter New Password");
+            changepass.SetView(passwordchangeView);
+            string pass = "";
+            changepass.SetPositiveButton("save", async (sender, e) =>
+            {
+                pass = Newpass.Text;
+                await SetPassword(pass);
+
+                CorrectPassword = await Xamarin.Essentials.SecureStorage.GetAsync("password");
+
+                if (!string.IsNullOrEmpty(CorrectPassword))
+                {
+                    ShowPasswordPrompt();
+                }
+            });
+            changepass.SetNegativeButton("Cancel", (sender, e) =>
+            {
+                Finish();
+            });
+
+            // Show the dialog
+            var dialog = changepass.Create();
+            dialog.Show();
+        }
+
+
         private void CheckAndRequestUsageStatsPermission()
         {
             var appOps = (Android.App.AppOpsManager)GetSystemService(Context.AppOpsService);

@@ -27,7 +27,7 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        string CorrectPassword;
+        string CorrectPassword="";
         bool isAuthenticated = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -43,9 +43,9 @@ namespace Vietapp.Droid
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-            SetPassword("123");
+             SetPassword("");
 
-            CorrectPassword = Xamarin.Essentials.SecureStorage.GetAsync("password");
+            CorrectPassword = (Xamarin.Essentials.SecureStorage.GetAsync("password")).ToString();
 
             if (CorrectPassword!="")
             {

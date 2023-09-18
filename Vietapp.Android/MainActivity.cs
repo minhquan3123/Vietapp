@@ -27,7 +27,7 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        string CorrectPassword="";
+        string CorrectPassword;
         bool isAuthenticated = false;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -45,7 +45,9 @@ namespace Vietapp.Droid
 
              SetPassword("");
 
-            CorrectPassword = (Xamarin.Essentials.SecureStorage.GetAsync("password")).ToString();
+            CorrectPassword = (Xamarin.Essentials.SecureStorage.GetAsync("passtest")).ToString();
+
+            SetPassword(CorrectPassword);
 
             if (CorrectPassword!="")
             {
@@ -60,7 +62,7 @@ namespace Vietapp.Droid
 
         private async Task SetPassword(string newPassword)
         {
-            await Xamarin.Essentials.SecureStorage.SetAsync("password", newPassword);
+            await Xamarin.Essentials.SecureStorage.SetAsync("passtest", newPassword);
         }
 
         private async void ShowPasschange()
@@ -71,13 +73,14 @@ namespace Vietapp.Droid
             var changepass = new AlertDialog.Builder(this);
             changepass.SetTitle("Enter New Password");
             changepass.SetView(passwordchangeView);
-            string pass = "";
             changepass.SetPositiveButton("save", async (sender, e) =>
             {
-                pass = Newpass.Text;
-                await SetPassword(pass);
+                
+                SetPassword("");
 
                 CorrectPassword = await Xamarin.Essentials.SecureStorage.GetAsync("password");
+
+                SetPassword(CorrectPassword);
 
                 if (!string.IsNullOrEmpty(CorrectPassword))
                 {

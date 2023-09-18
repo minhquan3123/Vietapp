@@ -43,9 +43,10 @@ namespace Vietapp.Droid
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-             SetPassword("");
+            SetPassword("");
 
-            CorrectPassword = (Xamarin.Essentials.SecureStorage.GetAsync("passtest")).ToString();
+            CorrectPassword = Xamarin.Essentials.SecureStorage.GetAsync("passtest").ToString();
+            Toast.MakeText(this, CorrectPassword, ToastLength.Short).Show();
 
             SetPassword(CorrectPassword);
 
@@ -73,10 +74,11 @@ namespace Vietapp.Droid
             var changepass = new AlertDialog.Builder(this);
             changepass.SetTitle("Enter New Password");
             changepass.SetView(passwordchangeView);
+            string pass = "";
             changepass.SetPositiveButton("save", async (sender, e) =>
             {
-                
-                SetPassword("");
+                pass = Newpass.Text;
+                SetPassword(pass.ToString());
 
                 CorrectPassword = await Xamarin.Essentials.SecureStorage.GetAsync("password");
 

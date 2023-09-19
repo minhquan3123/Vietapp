@@ -34,6 +34,7 @@ namespace Vietapp.Droid
         string CorrectPassword="";
         bool isAuthenticated = false;
 
+
         protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -144,6 +145,7 @@ namespace Vietapp.Droid
                 {
                     isAuthenticated = true;
                     StartBackgroundThread();
+                    Toast.MakeText(this, "Correct password.", ToastLength.Short).Show();
                 }
                 else
                 {

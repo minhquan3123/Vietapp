@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Remove="MainPage.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SQLite" Version="3.13.0" />
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.2196" />
     <PackageReference Include="Xamarin.Essentials" Version="1.7.0" />
   </ItemGroup>

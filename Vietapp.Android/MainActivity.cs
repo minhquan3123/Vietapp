@@ -2,6 +2,7 @@
 using Android.App.Usage;
 using Android.Content;
 using Android.Content.PM;
+using Android.Graphics;
 using Android.OS;
 using Android.Provider;
 using Android.Views;
@@ -10,10 +11,13 @@ using Java.Lang;
 using Java.Net;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.Forms;
+using static Java.Util.Jar.Attributes;
 
 namespace Vietapp.Droid
 {
@@ -27,10 +31,10 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        string CorrectPassword;
+        string CorrectPassword="";
         bool isAuthenticated = false;
 
-        protected override void OnCreate(Bundle savedInstanceState)
+        protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
@@ -61,7 +65,19 @@ namespace Vietapp.Droid
             }
         }
 
-        private async Task SetPassword(string newPassword)
+        public void CreateFiles(string Passtext)
+        {
+            var name = "pass.txt";
+            var destination = System.IO.Path.Combine(GetposPass(), name);
+
+            File.WriteAllText(destination, Passtext);
+        }
+        public string GetposPass()
+        {
+            return Android.App.Application.Context.GetExternalFilesDir(null).ToString();
+        }
+
+        public string GetPass()
         {
             await Xamarin.Essentials.SecureStorage.SetAsync("passtest", newPassword);
         }
@@ -72,9 +88,10 @@ namespace Vietapp.Droid
             var passwordchangeView = LayoutInflater.Inflate(Resource.Layout.change_password_dialog, null);
             var Newpass = passwordchangeView.FindViewById<EditText>(Resource.Id.newPass);
             var changepass = new AlertDialog.Builder(this);
+            var name = "pass.txt";
+            var destination = System.IO.Path.Combine(GetposPass(), name);
             changepass.SetTitle("Enter New Password");
             changepass.SetView(passwordchangeView);
-            string pass = "";
             changepass.SetPositiveButton("save", async (sender, e) =>
             {
                 pass = Newpass.Text;

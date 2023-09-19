@@ -14,5 +14,10 @@ namespace Vietapp
         {
             InitializeComponent();
         }
+
+        private void InitializeComponent()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

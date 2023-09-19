@@ -56,7 +56,6 @@ namespace Vietapp.Droid
 
             if (CorrectPassword!="")
             {
-                CheckAndRequestUsageStatsPermission();
                 ShowPasswordPrompt();
             }
             else

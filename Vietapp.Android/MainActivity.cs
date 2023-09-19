@@ -31,7 +31,7 @@ namespace Vietapp.Droid
         CancellationTokenSource cancellationTokenSource;
         const int UpdateInterval = 6000;
 
-        string CorrectPassword="";
+        string CorrectPassword = "";
         bool isAuthenticated = false;
 
         protected override async void OnCreate(Bundle savedInstanceState)
@@ -47,14 +47,12 @@ namespace Vietapp.Droid
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-            SetPassword("");
 
-            CorrectPassword = Xamarin.Essentials.SecureStorage.GetAsync("passtest").ToString();
-            Toast.MakeText(this, CorrectPassword, ToastLength.Short).Show();
+            CorrectPassword = GetPass();
+            CheckAndRequestUsageStatsPermission();
 
-            SetPassword(CorrectPassword);
 
-            if (CorrectPassword!="")
+            if (CorrectPassword != "")
             {
                 ShowPasswordPrompt();
             }
@@ -78,7 +76,17 @@ namespace Vietapp.Droid
 
         public string GetPass()
         {
-            await Xamarin.Essentials.SecureStorage.SetAsync("passtest", newPassword);
+            var name = "pass.txt";
+            var destination = System.IO.Path.Combine(GetposPass(), name);
+            if (System.IO.File.Exists(destination))
+            {
+                return File.ReadAllText(destination);
+            }
+            else
+            {
+                CreateFiles("pass");
+            }
+            return "";
         }
 
         private async void ShowPasschange()
@@ -93,12 +101,10 @@ namespace Vietapp.Droid
             changepass.SetView(passwordchangeView);
             changepass.SetPositiveButton("save", async (sender, e) =>
             {
-                pass = Newpass.Text;
-                SetPassword(pass.ToString());
 
-                CorrectPassword = await Xamarin.Essentials.SecureStorage.GetAsync("password");
 
-                SetPassword(CorrectPassword);
+                File.WriteAllText(destination, Newpass.Text);
+                CorrectPassword = GetPass();
 
                 if (!string.IsNullOrEmpty(CorrectPassword))
                 {

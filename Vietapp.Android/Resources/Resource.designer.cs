@@ -16884,7 +16884,7 @@ namespace Vietapp.Droid
 			public const int appUsageLayout = 2131230801;
 			
 			// aapt resource value: 0x7F080052
-			public const int appUsageTextView = 2131230802;
+			public const int appUsageListView = 2131230802;
 			
 			// aapt resource value: 0x7F080053
 			public const int arc = 2131230803;

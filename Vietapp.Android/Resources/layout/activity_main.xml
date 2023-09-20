@@ -9,11 +9,9 @@
     android:minWidth="25px"
     android:minHeight="25px">
 
-    <TextView
-        android:id="@+id/appUsageTextView"
+    <ListView
+        android:id="@+id/appUsageListView"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="App Usage Time"
-        android:textSize="18sp" />
+        android:layout_height="wrap_content" />
 
 </LinearLayout>

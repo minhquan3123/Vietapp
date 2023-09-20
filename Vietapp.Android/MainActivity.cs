@@ -24,7 +24,7 @@ namespace Vietapp.Droid
     [Activity(Label = "VietappBETA", MainLauncher = true, Icon = "@mipmap/icon")]
     public class MainActivity : Activity
     {
-        TextView appUsageTextView;
+        Android.Widget.ListView appUsageListView;
         PackageManager packageManager;
         UsageStatsManager usageStatsManager;
         Dictionary<string, long> appUsageData;
@@ -40,17 +40,14 @@ namespace Vietapp.Droid
 
             SetContentView(Resource.Layout.activity_main);
 
-
-            appUsageTextView = FindViewById<TextView>(Resource.Id.appUsageTextView);
+            appUsageListView = FindViewById<Android.Widget.ListView>(Resource.Id.appUsageListView);
             packageManager = PackageManager;
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
-
 
             if (CorrectPassword != "")
             {
@@ -101,8 +98,6 @@ namespace Vietapp.Droid
             changepass.SetView(passwordchangeView);
             changepass.SetPositiveButton("save", async (sender, e) =>
             {
-
-
                 File.WriteAllText(destination, Newpass.Text);
                 CorrectPassword = GetPass();
 
@@ -120,7 +115,6 @@ namespace Vietapp.Droid
             var dialog = changepass.Create();
             dialog.Show();
         }
-
 
         private void CheckAndRequestUsageStatsPermission()
         {
@@ -215,7 +209,7 @@ namespace Vietapp.Droid
                     }
                 }
 
-                // Display app usage statistics for installed apps (excluding system apps) in the TextView
+                // Display app usage statistics for installed apps (excluding system apps) in the ListView
                 ShowAppUsageData();
             }
         }
@@ -247,8 +241,11 @@ namespace Vietapp.Droid
                 appUsageList.Add(appUsageInfo);
             }
 
-            // Display app usage statistics for installed apps (excluding system apps) in the TextView
-            appUsageTextView.Text = string.Join("\n", appUsageList);
+            // Create an ArrayAdapter to populate the ListView
+            var adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, appUsageList);
+
+            // Set the adapter for the ListView
+            appUsageListView.Adapter = adapter;
         }
 
         private string GetAppName(string packageName)

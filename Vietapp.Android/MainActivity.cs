@@ -29,7 +29,7 @@ namespace Vietapp.Droid
         UsageStatsManager usageStatsManager;
         Dictionary<string, long> appUsageData;
         CancellationTokenSource cancellationTokenSource;
-        const int UpdateInterval = 6000;
+        const int UpdateInterval = 1000;
 
         string CorrectPassword = "";
         bool isAuthenticated = false;
@@ -37,7 +37,6 @@ namespace Vietapp.Droid
         protected override async void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-
             SetContentView(Resource.Layout.activity_main);
 
             appUsageListView = FindViewById<Android.Widget.ListView>(Resource.Id.appUsageListView);
@@ -45,6 +44,7 @@ namespace Vietapp.Droid
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
+            
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
@@ -180,6 +180,7 @@ namespace Vietapp.Droid
             });
         }
 
+        
         private void UpdateAppUsageStatistics()
         {
             var endTime = JavaSystem.CurrentTimeMillis();

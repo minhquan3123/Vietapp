@@ -10,8 +10,12 @@
     android:minHeight="25px">
 
     <ListView
-        android:id="@+id/appUsageListView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    android:id="@+id/appUsageListView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" 
+        <ListView.ItemTemplate>
+            <DataTemplate>
+                <Button Text={@+id}>
+             />
 
 </LinearLayout>

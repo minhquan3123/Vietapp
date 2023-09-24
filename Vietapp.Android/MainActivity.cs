@@ -40,7 +40,6 @@ namespace Vietapp.Droid
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
-            Toast.MakeText(this, CorrectPassword, ToastLength.Short).Show();
 
             if (CorrectPassword != "")
             {
@@ -85,7 +84,6 @@ namespace Vietapp.Droid
 
         private void ShowPasschange()
         {
-            // Create a simple password input dialog
             var passwordchangeView = LayoutInflater.Inflate(Resource.Layout.change_password_dialog, null);
             var Newpass = passwordchangeView.FindViewById<EditText>(Resource.Id.newPass);
             var changepass = new AlertDialog.Builder(this);
@@ -108,7 +106,6 @@ namespace Vietapp.Droid
                 Finish();
             });
 
-            // Show the dialog
             var dialog = changepass.Create();
             dialog.Show();
         }
@@ -127,7 +124,6 @@ namespace Vietapp.Droid
 
         private void ShowPasswordPrompt()
         {
-            // Create a simple password input dialog
             var passwordDialogView = LayoutInflater.Inflate(Resource.Layout.password_dialog, null);
             var passwordEditText = passwordDialogView.FindViewById<EditText>(Resource.Id.passwordEditText);
             var passwordDialog = new AlertDialog.Builder(this);
@@ -135,13 +131,10 @@ namespace Vietapp.Droid
             passwordDialog.SetView(passwordDialogView);
             passwordDialog.SetPositiveButton("OK", (sender, e) =>
             {
-                // Check if the entered password is correct
                 var enteredPassword = passwordEditText.Text;
                 if (enteredPassword == CorrectPassword)
                 {
                     isAuthenticated = true;
-
-                    // Start the background thread
                     StartBackgroundThread();
                 }
                 else
@@ -155,19 +148,16 @@ namespace Vietapp.Droid
                 Finish();
             });
 
-            // Show the dialog
             var dialog = passwordDialog.Create();
             dialog.Show();
         }
 
         private void CreateAppButtons()
         {
-            // Find the LinearLayout with the ID "layout"
             var layout = FindViewById<LinearLayout>(Resource.Id.layout);
 
             if (layout != null)
             {
-                // Only proceed if the layout is found
                 var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
 
                 foreach (var appInfo in installedApps)
@@ -178,23 +168,24 @@ namespace Vietapp.Droid
                         var button = new Button(this);
                         button.Text = appName;
 
+                        var textView = new TextView(this);
+                        textView.Text = "Usage Time: 0 minutes";
+
                         button.Click += (sender, e) =>
                         {
                             LaunchAppByPackageName(appInfo.PackageName);
                         };
 
-                        // Add the button to the layout
                         layout.AddView(button);
+                        layout.AddView(textView);
                     }
                 }
             }
             else
             {
-                // Handle the case where the layout is not found
                 Console.WriteLine("Layout not found with ID 'layout'");
             }
         }
-
 
         private void LaunchAppByPackageName(string packageName)
         {
@@ -209,25 +200,20 @@ namespace Vietapp.Droid
             }
         }
 
-        private void StartBackgroundThread()
+        private async void StartBackgroundThread()
         {
-            Task.Run(() =>
+            while (!cancellationTokenSource.Token.IsCancellationRequested)
             {
-                while (!cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    // Delay for the update interval
-                    Task.Delay(UpdateInterval).Wait();
+                await Task.Delay(UpdateInterval);
 
-                    RunOnUiThread(() =>
+                RunOnUiThread(() =>
+                {
+                    if (isAuthenticated)
                     {
-                        // Only retrieve and update app usage statistics if authenticated
-                        if (isAuthenticated)
-                        {
-                            UpdateAppUsageStatistics();
-                        }
-                    });
-                }
-            });
+                        UpdateAppUsageStatistics();
+                    }
+                });
+            }
         }
 
         private void UpdateAppUsageStatistics()
@@ -239,57 +225,40 @@ namespace Vietapp.Droid
 
             if (stats != null)
             {
-                // Clear the existing app usage data
-                appUsageData.Clear();
-
-                // Get a list of all installed apps (excluding system apps)
-                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
-
-                foreach (var usageStats in stats)
+                foreach (var appInfo in stats)
                 {
-                    string packageName = usageStats.PackageName;
+                    string packageName = appInfo.PackageName;
+                    long totalTimeInForeground = appInfo.TotalTimeInForeground / (1000 * 60); // Convert to minutes
 
-                    // Check if the package name corresponds to an installed app and is not a system app
-                    if (IsInstalledApp(installedApps, packageName))
+                    UpdateUsageTextView(packageName, totalTimeInForeground);
+                }
+            }
+        }
+
+        private void UpdateUsageTextView(string packageName, long totalTimeInForeground)
+        {
+            var layout = FindViewById<LinearLayout>(Resource.Id.layout);
+
+            if (layout != null)
+            {
+                for (int i = 0; i < layout.ChildCount; i += 2) // Increment by 2 to skip the TextViews
+                {
+                    var button = layout.GetChildAt(i) as Button;
+                    var textView = layout.GetChildAt(i + 1) as TextView;
+
+                    if (button != null && textView != null)
                     {
-                        long totalTimeInForeground = usageStats.TotalTimeInForeground / (1000 * 60); // Convert to minutes
+                        string appName = button.Text;
 
-                        // Update or add the app's usage time in the dictionary
-                        appUsageData[packageName] = totalTimeInForeground;
+                        if (packageName.Equals(packageManager.GetLaunchIntentForPackage(packageName)?.Component?.PackageName))
+                        {
+                            textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
+                            break;
+                        }
                     }
                 }
-
-                // Display app usage statistics in the console (customize this part for your UI)
-                foreach (var kvp in appUsageData)
-                {
-                    string packageName = kvp.Key;
-                    long totalTimeInForeground = kvp.Value;
-
-                    Console.WriteLine($"App Package Name: {packageName}, Usage Time (minutes): {totalTimeInForeground}");
-                }
             }
         }
 
-
-        private bool IsInstalledApp(IList<ApplicationInfo> installedApps, string packageName)
-        {
-            // Filter out system apps by checking their flags
-            foreach (var appInfo in installedApps)
-            {
-                if (appInfo.PackageName == packageName && (appInfo.Flags & ApplicationInfoFlags.System) == 0)
-                {
-                    return true; // It's an installed non-system app
-                }
-            }
-            return false; // It's either a system app or not installed
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            // Stop the background thread when the activity is destroyed
-            cancellationTokenSource.Cancel();
-        }
     }
 }

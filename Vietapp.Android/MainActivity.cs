@@ -2,29 +2,23 @@
 using Android.App.Usage;
 using Android.Content;
 using Android.Content.PM;
-using Android.Graphics;
 using Android.OS;
 using Android.Provider;
 using Android.Views;
 using Android.Widget;
 using Java.Lang;
-using Java.Net;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using System.Threading.Tasks;
-using Xamarin.Forms;
-using static Java.Util.Jar.Attributes;
 
 namespace Vietapp.Droid
 {
     [Activity(Label = "VietappBETA", MainLauncher = true, Icon = "@mipmap/icon")]
     public class MainActivity : Activity
     {
-        Android.Widget.ListView appUsageListView;
         PackageManager packageManager;
         UsageStatsManager usageStatsManager;
         Dictionary<string, long> appUsageData;
@@ -34,20 +28,19 @@ namespace Vietapp.Droid
         string CorrectPassword = "";
         bool isAuthenticated = false;
 
-        protected override async void OnCreate(Bundle savedInstanceState)
+        protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.activity_main);
 
-            appUsageListView = FindViewById<Android.Widget.ListView>(Resource.Id.appUsageListView);
             packageManager = PackageManager;
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
-            
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
+            Toast.MakeText(this, CorrectPassword, ToastLength.Short).Show();
 
             if (CorrectPassword != "")
             {
@@ -57,6 +50,9 @@ namespace Vietapp.Droid
             {
                 ShowPasschange();
             }
+
+            // Create app buttons
+            CreateAppButtons();
         }
 
         public void CreateFiles(string Passtext)
@@ -66,9 +62,10 @@ namespace Vietapp.Droid
 
             File.WriteAllText(destination, Passtext);
         }
+
         public string GetposPass()
         {
-            return Android.App.Application.Context.GetExternalFilesDir(null).ToString();
+            return Android.App.Application.Context.GetExternalFilesDir("pass.txt").ToString();
         }
 
         public string GetPass()
@@ -83,10 +80,10 @@ namespace Vietapp.Droid
             {
                 CreateFiles("pass");
             }
-            return "";
+            return ("");
         }
 
-        private async void ShowPasschange()
+        private void ShowPasschange()
         {
             // Create a simple password input dialog
             var passwordchangeView = LayoutInflater.Inflate(Resource.Layout.change_password_dialog, null);
@@ -96,9 +93,9 @@ namespace Vietapp.Droid
             var destination = System.IO.Path.Combine(GetposPass(), name);
             changepass.SetTitle("Enter New Password");
             changepass.SetView(passwordchangeView);
-            changepass.SetPositiveButton("save", async (sender, e) =>
+            changepass.SetPositiveButton("save", (sender, e) =>
             {
-                File.WriteAllText(destination, Newpass.Text);
+                File.WriteAllText(destination, (Newpass.Text).ToString());
                 CorrectPassword = GetPass();
 
                 if (!string.IsNullOrEmpty(CorrectPassword))
@@ -143,6 +140,8 @@ namespace Vietapp.Droid
                 if (enteredPassword == CorrectPassword)
                 {
                     isAuthenticated = true;
+
+                    // Start the background thread
                     StartBackgroundThread();
                 }
                 else
@@ -161,13 +160,64 @@ namespace Vietapp.Droid
             dialog.Show();
         }
 
+        private void CreateAppButtons()
+        {
+            // Find the LinearLayout with the ID "layout"
+            var layout = FindViewById<LinearLayout>(Resource.Id.layout);
+
+            if (layout != null)
+            {
+                // Only proceed if the layout is found
+                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
+
+                foreach (var appInfo in installedApps)
+                {
+                    if ((appInfo.Flags & ApplicationInfoFlags.System) == 0)
+                    {
+                        string appName = appInfo.LoadLabel(packageManager).ToString();
+                        var button = new Button(this);
+                        button.Text = appName;
+
+                        button.Click += (sender, e) =>
+                        {
+                            LaunchAppByPackageName(appInfo.PackageName);
+                        };
+
+                        // Add the button to the layout
+                        layout.AddView(button);
+                    }
+                }
+            }
+            else
+            {
+                // Handle the case where the layout is not found
+                Console.WriteLine("Layout not found with ID 'layout'");
+            }
+        }
+
+
+        private void LaunchAppByPackageName(string packageName)
+        {
+            Intent intent = PackageManager.GetLaunchIntentForPackage(packageName);
+            if (intent != null)
+            {
+                StartActivity(intent);
+            }
+            else
+            {
+                Toast.MakeText(this, "App not found.", ToastLength.Short).Show();
+            }
+        }
+
         private void StartBackgroundThread()
         {
-            Task.Run(async () =>
+            Task.Run(() =>
             {
                 while (!cancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    await Task.Delay(UpdateInterval);
+                    // Delay for the update interval
+                    Task.Delay(UpdateInterval).Wait();
+
                     RunOnUiThread(() =>
                     {
                         // Only retrieve and update app usage statistics if authenticated
@@ -180,7 +230,6 @@ namespace Vietapp.Droid
             });
         }
 
-        
         private void UpdateAppUsageStatistics()
         {
             var endTime = JavaSystem.CurrentTimeMillis();
@@ -210,10 +259,17 @@ namespace Vietapp.Droid
                     }
                 }
 
-                // Display app usage statistics for installed apps (excluding system apps) in the ListView
-                ShowAppUsageData();
+                // Display app usage statistics in the console (customize this part for your UI)
+                foreach (var kvp in appUsageData)
+                {
+                    string packageName = kvp.Key;
+                    long totalTimeInForeground = kvp.Value;
+
+                    Console.WriteLine($"App Package Name: {packageName}, Usage Time (minutes): {totalTimeInForeground}");
+                }
             }
         }
+
 
         private bool IsInstalledApp(IList<ApplicationInfo> installedApps, string packageName)
         {
@@ -226,41 +282,6 @@ namespace Vietapp.Droid
                 }
             }
             return false; // It's either a system app or not installed
-        }
-
-        private void ShowAppUsageData()
-        {
-            var appUsageList = new List<string>();
-
-            foreach (var kvp in appUsageData)
-            {
-                string packageName = kvp.Key;
-                string appName = GetAppName(packageName);
-                long totalTimeInForeground = kvp.Value;
-
-                string appUsageInfo = $"{appName}: {totalTimeInForeground} minutes";
-                appUsageList.Add(appUsageInfo);
-            }
-
-            // Create an ArrayAdapter to populate the ListView
-            var adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, appUsageList);
-
-            // Set the adapter for the ListView
-            appUsageListView.Adapter = adapter;
-        }
-
-        private string GetAppName(string packageName)
-        {
-            try
-            {
-                var packageInfo = PackageManager.GetPackageInfo(packageName, PackageInfoFlags.Activities);
-                return packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
-            }
-            catch (PackageManager.NameNotFoundException)
-            {
-                // Handle the case where the package name is not found
-                return packageName;
-            }
         }
 
         protected override void OnDestroy()

@@ -10,7 +10,7 @@ namespace Vietapp
         {
             InitializeComponent();
 
-            MainPage = new MainPage();
+            MainPage = new MainPageClass();
         }
 
         protected override void OnStart()

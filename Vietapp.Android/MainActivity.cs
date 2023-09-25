@@ -1,4 +1,5 @@
 ﻿using Android.App;
+using Android.App.Admin;
 using Android.App.Usage;
 using Android.Content;
 using Android.Content.PM;
@@ -15,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
 
+
 namespace Vietapp.Droid
 {
     [Activity(Label = "VietappBETA", MainLauncher = true, Icon = "@mipmap/icon")]
@@ -29,6 +31,7 @@ namespace Vietapp.Droid
         string CorrectPassword = "";
         bool isAuthenticated = false;
 
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -38,6 +41,7 @@ namespace Vietapp.Droid
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
+
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
@@ -153,12 +157,22 @@ namespace Vietapp.Droid
             dialog.Show();
         }
 
+        public class MyDeviceAdminReceiver : DeviceAdminReceiver
+        {
+
+            // Handle device admin callbacks
+
+        }
+
         private void CreateAppButtons()
         {
             var layout = FindViewById<LinearLayout>(Resource.Id.layout);
 
             var endTime = JavaSystem.CurrentTimeMillis();
             var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
+            
+            DevicePolicyManager dpm = (DevicePolicyManager)GetSystemService(Context.DevicePolicyService);
+            ComponentName adminComponent = new ComponentName(this, Java.Lang.Class.FromType(typeof(MyDeviceAdminReceiver)));
 
             if (layout != null)
             {
@@ -179,7 +193,7 @@ namespace Vietapp.Droid
 
                         button.Click += (sender, e) =>
                         {
-                            LockApp(packageName);
+                            dpm.SetApplicationHidden(adminComponent, packageName, true);
                         };
 
                         layout.AddView(button);
@@ -211,10 +225,6 @@ namespace Vietapp.Droid
             return 0; // App not found in usage stats or no usage time
         }
 
-        private void LockApp(string packageName)
-        {
-
-        }
 
         private async void StartBackgroundThread()
         {

@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.Essentials;
 
 namespace Vietapp.Droid
 {
@@ -156,24 +157,29 @@ namespace Vietapp.Droid
         {
             var layout = FindViewById<LinearLayout>(Resource.Id.layout);
 
+            var endTime = JavaSystem.CurrentTimeMillis();
+            var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
+
             if (layout != null)
             {
                 var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
-
                 foreach (var appInfo in installedApps)
                 {
                     if ((appInfo.Flags & ApplicationInfoFlags.System) == 0)
                     {
+                        string packageName = appInfo.PackageName;
+                        long totalTimeInForeground = GetTotalTimeInForeground(packageName, startTime, endTime);
+
                         string appName = appInfo.LoadLabel(packageManager).ToString();
                         var button = new Button(this);
                         button.Text = appName;
 
                         var textView = new TextView(this);
-                        textView.Text = "Usage Time: 0 minutes";
+                        textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
 
                         button.Click += (sender, e) =>
                         {
-                            LaunchAppByPackageName(appInfo.PackageName);
+                            LockApp(packageName);
                         };
 
                         layout.AddView(button);
@@ -187,17 +193,27 @@ namespace Vietapp.Droid
             }
         }
 
-        private void LaunchAppByPackageName(string packageName)
+        private long GetTotalTimeInForeground(string packageName, long startTime, long endTime)
         {
-            Intent intent = PackageManager.GetLaunchIntentForPackage(packageName);
-            if (intent != null)
+            var stats = usageStatsManager.QueryUsageStats(UsageStatsInterval.Daily, startTime, endTime);
+
+            if (stats != null)
             {
-                StartActivity(intent);
+                foreach (var appInfo in stats)
+                {
+                    if (appInfo.PackageName.Equals(packageName))
+                    {
+                        return appInfo.TotalTimeInForeground / (1000 * 60); // Convert to minutes
+                    }
+                }
             }
-            else
-            {
-                Toast.MakeText(this, "App not found.", ToastLength.Short).Show();
-            }
+
+            return 0; // App not found in usage stats or no usage time
+        }
+
+        private void LockApp(string packageName)
+        {
+
         }
 
         private async void StartBackgroundThread()
@@ -210,55 +226,12 @@ namespace Vietapp.Droid
                 {
                     if (isAuthenticated)
                     {
-                        UpdateAppUsageStatistics();
+                        
                     }
                 });
             }
         }
-
-        private void UpdateAppUsageStatistics()
-        {
-            var endTime = JavaSystem.CurrentTimeMillis();
-            var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
-
-            var stats = usageStatsManager.QueryUsageStats(UsageStatsInterval.Daily, startTime, endTime);
-
-            if (stats != null)
-            {
-                foreach (var appInfo in stats)
-                {
-                    string packageName = appInfo.PackageName;
-                    long totalTimeInForeground = appInfo.TotalTimeInForeground / (1000 * 60); // Convert to minutes
-
-                    UpdateUsageTextView(packageName, totalTimeInForeground);
-                }
-            }
-        }
-
-        private void UpdateUsageTextView(string packageName, long totalTimeInForeground)
-        {
-            var layout = FindViewById<LinearLayout>(Resource.Id.layout);
-
-            if (layout != null)
-            {
-                for (int i = 0; i < layout.ChildCount; i += 2) // Increment by 2 to skip the TextViews
-                {
-                    var button = layout.GetChildAt(i) as Button;
-                    var textView = layout.GetChildAt(i + 1) as TextView;
-
-                    if (button != null && textView != null)
-                    {
-                        string appName = button.Text;
-
-                        if (packageName.Equals(packageManager.GetLaunchIntentForPackage(packageName)?.Component?.PackageName))
-                        {
-                            textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
     }
 }
+
+        

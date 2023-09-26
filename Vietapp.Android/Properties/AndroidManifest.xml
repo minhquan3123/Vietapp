@@ -2,8 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="6.2" package="com.companyname.vietapp">
 	<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
 	<application android:label="Vietapp.Android" android:theme="@style/MainTheme">
-		<receiver android:name=".MyDeviceAdminReceiver" android:exported="false">
-			<meta-data android:name="android.app.device_admin" />
+		<receiver
+    android:name=".MyDeviceAdminReceiver"
+    android:label="@string/abc_prepend_shortcut_label"
+    android:description="@string/mtrl_picker_confirm"
+    android:permission="android.permission.BIND_DEVICE_ADMIN"
+	android:exported="false">
+			<meta-data
+				android:name="android.app.device_admin"
+				android:resource="@xml/device_admin_receiver" />
 			<intent-filter>
 				<action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
 			</intent-filter>

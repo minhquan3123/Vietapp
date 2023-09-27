@@ -42,6 +42,7 @@ namespace Vietapp.Droid
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
+            
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
@@ -167,13 +168,13 @@ namespace Vietapp.Droid
         private void CreateAppButtons()
         {
             var layout = FindViewById<LinearLayout>(Resource.Id.layout);
-
+            Bundle bundle = new Bundle();
             var endTime = JavaSystem.CurrentTimeMillis();
             var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
             
             DevicePolicyManager dpm = (DevicePolicyManager)GetSystemService(Context.DevicePolicyService);
             ComponentName adminComponent = new ComponentName(this, Java.Lang.Class.FromType(typeof(MyDeviceAdminReceiver)));
-
+            bundle.PutInt("key2", 1);
             if (layout != null)
             {
                 var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
@@ -187,13 +188,12 @@ namespace Vietapp.Droid
                         string appName = appInfo.LoadLabel(packageManager).ToString();
                         var button = new Button(this);
                         button.Text = appName;
-
                         var textView = new TextView(this);
                         textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
 
                         button.Click += (sender, e) =>
                         {
-                            dpm.SetApplicationHidden(adminComponent, packageName, true);
+                            dpm.SetApplicationRestrictions(adminComponent, packageName ,bundle);
                         };
 
                         layout.AddView(button);

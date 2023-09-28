@@ -42,7 +42,6 @@ namespace Vietapp.Droid
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
 
-            
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
@@ -193,7 +192,7 @@ namespace Vietapp.Droid
 
                         button.Click += (sender, e) =>
                         {
-                            dpm.SetApplicationRestrictions(adminComponent, packageName ,bundle);
+                            Toast.MakeText(this, appName+" has been locked", ToastLength.Short).Show();
                         };
 
                         layout.AddView(button);

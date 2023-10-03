@@ -3,7 +3,6 @@
     android:versionCode="1"
     android:versionName="6.2"
     package="com.companyname.vietapp">
-
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
 
     <application android:label="Vietapp.Android" android:theme="@style/MainTheme">

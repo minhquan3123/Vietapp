@@ -15,7 +15,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.Essentials;
-
+using Mono;
+using Android.Content.Res;
 
 namespace Vietapp.Droid
 {
@@ -41,7 +42,8 @@ namespace Vietapp.Droid
             usageStatsManager = (UsageStatsManager)GetSystemService(Context.UsageStatsService);
             appUsageData = new Dictionary<string, long>();
             cancellationTokenSource = new CancellationTokenSource();
-
+            Window.AddFlags(WindowManagerFlags.Fullscreen);
+            Window.DecorView.SystemUiVisibility = StatusBarVisibility.Hidden;
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
@@ -55,7 +57,7 @@ namespace Vietapp.Droid
                 ShowPasschange();
             }
 
-            // Create app buttons
+
             CreateAppButtons();
         }
 
@@ -126,6 +128,15 @@ namespace Vietapp.Droid
                 StartActivity(intent);
             }
         }
+        private void LockToFullscreen()
+        {
+            // Add flags
+            Window.AddFlags(WindowManagerFlags.Fullscreen);
+
+            // Hide status bar
+            Window.DecorView.SystemUiVisibility =
+                StatusBarVisibility.Hidden;
+        }
 
         private void ShowPasswordPrompt()
         {
@@ -157,11 +168,16 @@ namespace Vietapp.Droid
             dialog.Show();
         }
 
-        public class MyDeviceAdminReceiver : DeviceAdminReceiver
+        public override void OnConfigurationChanged(Configuration newConfig)
         {
+            base.OnConfigurationChanged(newConfig);
 
-            // Handle device admin callbacks
+            if (newConfig.Orientation == Android.Content.Res.Orientation.Landscape)
+            {
+                RequestedOrientation = ScreenOrientation.Portrait;
+            }
 
+            Window.DecorView.SystemUiVisibility = StatusBarVisibility.Hidden;
         }
 
         private void CreateAppButtons()
@@ -170,41 +186,38 @@ namespace Vietapp.Droid
             Bundle bundle = new Bundle();
             var endTime = JavaSystem.CurrentTimeMillis();
             var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
-            
+
             DevicePolicyManager dpm = (DevicePolicyManager)GetSystemService(Context.DevicePolicyService);
-            ComponentName adminComponent = new ComponentName(this, Java.Lang.Class.FromType(typeof(MyDeviceAdminReceiver)));
             bundle.PutInt("key2", 1);
+
             if (layout != null)
             {
-                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
-                foreach (var appInfo in installedApps)
+                var installedPackages = packageManager.GetInstalledPackages(PackageInfoFlags.MatchUninstalledPackages);
+
+                foreach (var packageInfo in installedPackages)
                 {
-                    if ((appInfo.Flags & ApplicationInfoFlags.System) == 0)
+                    string packageName = packageInfo.PackageName;
+                    long totalTimeInForeground = GetTotalTimeInForeground(packageName, startTime, endTime);
+
+                    var appName = packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
+                    var button = new Button(this);
+                    button.Text = appName;
+                    var textView = new TextView(this);
+                    textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
+
+                    button.Click += (sender, e) =>
                     {
-                        string packageName = appInfo.PackageName;
-                        long totalTimeInForeground = GetTotalTimeInForeground(packageName, startTime, endTime);
+                        Toast.MakeText(this, appName + " has been locked", ToastLength.Short).Show();
+                        LockToFullscreen();
+                    };
 
-                        string appName = appInfo.LoadLabel(packageManager).ToString();
-                        var button = new Button(this);
-                        button.Text = appName;
-                        var textView = new TextView(this);
-                        textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
-
-                        button.Click += (sender, e) =>
-                        {
-                            Toast.MakeText(this, appName+" has been locked", ToastLength.Short).Show();
-                        };
-
-                        layout.AddView(button);
-                        layout.AddView(textView);
-                    }
+                    layout.AddView(button);
+                    layout.AddView(textView);
                 }
             }
-            else
-            {
-                Console.WriteLine("Layout not found with ID 'layout'");
-            }
         }
+
+
 
         private long GetTotalTimeInForeground(string packageName, long startTime, long endTime)
         {

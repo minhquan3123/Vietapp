@@ -17,6 +17,10 @@ using System.Threading.Tasks;
 using Xamarin.Essentials;
 using Mono;
 using Android.Content.Res;
+using Java.Lang.Reflect;
+using static Android.Telephony.CarrierConfigManager;
+using Xamarin.Forms;
+using Xamarin.Forms.Platform.Android;
 
 namespace Vietapp.Droid
 {
@@ -182,8 +186,12 @@ namespace Vietapp.Droid
 
         private void CreateAppButtons()
         {
-            var layout = FindViewById<LinearLayout>(Resource.Id.layout);
-            Bundle bundle = new Bundle();
+            var scrollView = new Android.Widget.ScrollView(this);
+            var layout = new LinearLayout(this);
+            layout.Orientation = Android.Content.Res.Orientation.Square;
+            scrollView.AddView(layout);
+
+            var bundle = new Bundle();
             var endTime = JavaSystem.CurrentTimeMillis();
             var startTime = endTime - 24 * 60 * 60 * 1000; // 24 hours ago
 
@@ -192,31 +200,53 @@ namespace Vietapp.Droid
 
             if (layout != null)
             {
-                var installedPackages = packageManager.GetInstalledPackages(PackageInfoFlags.MatchUninstalledPackages);
+                var installedApps = packageManager.GetInstalledApplications(PackageInfoFlags.MatchUninstalledPackages);
 
-                foreach (var packageInfo in installedPackages)
+                foreach (var appInfo in installedApps)
                 {
-                    string packageName = packageInfo.PackageName;
-                    long totalTimeInForeground = GetTotalTimeInForeground(packageName, startTime, endTime);
-
-                    var appName = packageInfo.ApplicationInfo.LoadLabel(packageManager).ToString();
-                    var button = new Button(this);
-                    button.Text = appName;
-                    var textView = new TextView(this);
-                    textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
-
-                    button.Click += (sender, e) =>
+                    if ((appInfo.Flags & ApplicationInfoFlags.System) == 0)
                     {
-                        Toast.MakeText(this, appName + " has been locked", ToastLength.Short).Show();
-                        LockToFullscreen();
-                    };
+                        string packageName = appInfo.PackageName;
+                        long totalTimeInForeground = GetTotalTimeInForeground(packageName, startTime, endTime);
 
-                    layout.AddView(button);
-                    layout.AddView(textView);
+                        string appName = appInfo.LoadLabel(packageManager).ToString();
+                        var button = new Android.Widget.Button(this);
+                        button.Text = appName;
+                        var textView = new TextView(this);
+                        textView.Text = $"Usage Time: {totalTimeInForeground} minutes";
+
+                        button.Click += (sender, e) =>
+                        {
+                            Toast.MakeText(this, appName + " has been locked", ToastLength.Short).Show();
+                            LockToFullscreen();
+                        };
+
+                        layout.AddView(button);
+                        layout.AddView(textView);
+
+                        // Check if the app is YouTube
+                        if (packageName.Equals("com.google.android.youtube"))
+                        {
+                            var youtubeButton = new Android.Widget.Button(this);
+                            youtubeButton.Text = "YouTube";
+                            var youtubeTextView = new TextView(this);
+                            youtubeTextView.Text = $"Usage Time: {totalTimeInForeground} minutes";
+
+                            youtubeButton.Click += (sender, e) =>
+                            {
+                                Toast.MakeText(this, "YouTube has been locked", ToastLength.Short).Show();
+                                LockToFullscreen();
+                            };
+
+                            layout.AddView(youtubeButton);
+                            layout.AddView(youtubeTextView);
+                        }
+                    }
                 }
             }
-        }
 
+            SetContentView(scrollView);
+        }
 
 
         private long GetTotalTimeInForeground(string packageName, long startTime, long endTime)

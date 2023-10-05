@@ -13,7 +13,7 @@ namespace Vietapp.Droid
 {
     internal class DeviceAdminReceiver
     {
-        public class MyDeviceAdminReceiver : DeviceAdminReceiver
+        public class MyDeviceAdminReceiver : Java.Lang.Object
         {
 
         }

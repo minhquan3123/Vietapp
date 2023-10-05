@@ -132,14 +132,10 @@ namespace Vietapp.Droid
                 StartActivity(intent);
             }
         }
-        private void LockToFullscreen()
+        private void LockApp(string name)
         {
-            // Add flags
-            Window.AddFlags(WindowManagerFlags.Fullscreen);
-
-            // Hide status bar
-            Window.DecorView.SystemUiVisibility =
-                StatusBarVisibility.Hidden;
+            DeviceAdminReceiver.MyDeviceAdminReceiver.ReferenceEquals(this, name);
+            Toast.MakeText(this, name + " has been locked", ToastLength.Short).Show();  
         }
 
         private void ShowPasswordPrompt()
@@ -188,7 +184,7 @@ namespace Vietapp.Droid
         {
             var scrollView = new Android.Widget.ScrollView(this);
             var layout = new LinearLayout(this);
-            layout.Orientation = Android.Content.Res.Orientation.Square;
+            layout.Orientation = Android.Widget.Orientation.Vertical;
             scrollView.AddView(layout);
 
             var bundle = new Bundle();
@@ -217,8 +213,7 @@ namespace Vietapp.Droid
 
                         button.Click += (sender, e) =>
                         {
-                            Toast.MakeText(this, appName + " has been locked", ToastLength.Short).Show();
-                            LockToFullscreen();
+                            LockApp(appName);
                         };
 
                         layout.AddView(button);
@@ -235,7 +230,7 @@ namespace Vietapp.Droid
                             youtubeButton.Click += (sender, e) =>
                             {
                                 Toast.MakeText(this, "YouTube has been locked", ToastLength.Short).Show();
-                                LockToFullscreen();
+                                LockApp("com.google.android.youtube");
                             };
 
                             layout.AddView(youtubeButton);

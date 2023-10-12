@@ -19,7 +19,18 @@
         </receiver>
 
     </application>
-
+	<service
+    android:name="Vietapp.droid.MyAccessibilityService"
+    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+    android:enabled="true"
+    android:exported="true">
+		<intent-filter>
+			<action android:name="android.accessibilityservice.AccessibilityService" />
+		</intent-filter>
+		<meta-data
+			android:name="android.accessibilityservice"
+			android:resource="@xml/accessibilityservice" />
+	</service>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />

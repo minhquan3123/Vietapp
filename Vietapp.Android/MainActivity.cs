@@ -134,7 +134,6 @@ namespace Vietapp.Droid
         }
         private void LockApp(string name)
         {
-            DeviceAdminReceiver.MyDeviceAdminReceiver.ReferenceEquals(this, name);
             Toast.MakeText(this, name + " has been locked", ToastLength.Short).Show();  
         }
 
@@ -176,7 +175,6 @@ namespace Vietapp.Droid
             {
                 RequestedOrientation = ScreenOrientation.Portrait;
             }
-
             Window.DecorView.SystemUiVisibility = StatusBarVisibility.Hidden;
         }
 

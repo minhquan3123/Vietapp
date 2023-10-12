@@ -21,9 +21,9 @@
     </application>
 	<service
     android:name="Vietapp.droid.MyAccessibilityService"
-    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+    android:exported="true"
+	android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
     android:enabled="true"
-    android:exported="true">
 		<intent-filter>
 			<action android:name="android.accessibilityservice.AccessibilityService" />
 		</intent-filter>

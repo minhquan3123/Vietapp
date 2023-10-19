@@ -167,16 +167,6 @@ namespace Vietapp.Droid
             dialog.Show();
         }
 
-        public override void OnConfigurationChanged(Configuration newConfig)
-        {
-            base.OnConfigurationChanged(newConfig);
-
-            if (newConfig.Orientation == Android.Content.Res.Orientation.Landscape)
-            {
-                RequestedOrientation = ScreenOrientation.Portrait;
-            }
-            Window.DecorView.SystemUiVisibility = StatusBarVisibility.Hidden;
-        }
 
         private void CreateAppButtons()
         {
@@ -217,23 +207,6 @@ namespace Vietapp.Droid
                         layout.AddView(button);
                         layout.AddView(textView);
 
-                        // Check if the app is YouTube
-                        if (packageName.Equals("com.google.android.youtube"))
-                        {
-                            var youtubeButton = new Android.Widget.Button(this);
-                            youtubeButton.Text = "YouTube";
-                            var youtubeTextView = new TextView(this);
-                            youtubeTextView.Text = $"Usage Time: {totalTimeInForeground} minutes";
-
-                            youtubeButton.Click += (sender, e) =>
-                            {
-                                Toast.MakeText(this, "YouTube has been locked", ToastLength.Short).Show();
-                                LockApp("com.google.android.youtube");
-                            };
-
-                            layout.AddView(youtubeButton);
-                            layout.AddView(youtubeTextView);
-                        }
                     }
                 }
             }

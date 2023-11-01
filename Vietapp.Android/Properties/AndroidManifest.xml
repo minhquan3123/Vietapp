@@ -1,31 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="1"
-    android:versionName="6.2"
-    package="com.companyname.vietapp">
-    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
-
-    <application android:label="Vietapp.Android" android:theme="@style/MainTheme">
-        <receiver
-            android:name="android.app.device_admin"
-            android:exported="true">
-
-            <meta-data android:name="com.companyname.Vietapp" android:value="@bool/abc_action_bar_embed_tabs"/>
-            
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>
-            </intent-filter>
-
-        </receiver>
-
-    </application>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
-    <uses-permission android:name="android.permission.GET_TASKS" />
-    <uses-permission android:name="android.permission.INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.LOADER_USAGE_STATS" />
-    <uses-permission android:name="android.permission.ACCESS_CHECKIN_PROPERTIES" />
-    <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
-
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="6.2" package="com.companyname.vietapp">
+	<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="33" />
+	<application android:label="Vietapp.Android" android:theme="@style/MainTheme">
+		<receiver android:name="android.app.device_admin" android:exported="true">
+			<meta-data android:name="com.companyname.Vietapp" android:value="@bool/abc_action_bar_embed_tabs" />
+			<intent-filter>
+				<action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+			</intent-filter>
+		</receiver>
+	</application>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+	<uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+	<uses-permission android:name="android.permission.GET_TASKS" />
+	<uses-permission android:name="android.permission.INSTALL_PACKAGES" />
+	<uses-permission android:name="android.permission.LOADER_USAGE_STATS" />
+	<uses-permission android:name="android.permission.ACCESS_CHECKIN_PROPERTIES" />
+	<uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
 </manifest>

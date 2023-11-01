@@ -18,7 +18,6 @@ using Xamarin.Essentials;
 using Mono;
 using Android.Content.Res;
 using Java.Lang.Reflect;
-using static Android.Telephony.CarrierConfigManager;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.Android;
 
@@ -135,6 +134,7 @@ namespace Vietapp.Droid
         private void LockApp(string name)
         {
             Toast.MakeText(this, name + " has been locked", ToastLength.Short).Show();  
+
         }
 
         private void ShowPasswordPrompt()

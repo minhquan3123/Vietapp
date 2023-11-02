@@ -50,6 +50,7 @@ namespace Vietapp.Droid
 
             CorrectPassword = GetPass();
             CheckAndRequestUsageStatsPermission();
+            StartService(new Intent(this, typeof(AppTrackingService)));
 
             if (CorrectPassword != "")
             {
@@ -62,6 +63,12 @@ namespace Vietapp.Droid
 
 
             CreateAppButtons();
+        }
+
+        protected override void OnDestroy()
+        {
+            StopService(new Intent(this, typeof(AppTrackingService)));
+            base.OnDestroy();
         }
 
         public void CreateFiles(string Passtext)
@@ -134,7 +141,7 @@ namespace Vietapp.Droid
         private void LockApp(string name)
         {
             Toast.MakeText(this, name + " has been locked", ToastLength.Short).Show();  
-
+           
         }
 
         private void ShowPasswordPrompt()
